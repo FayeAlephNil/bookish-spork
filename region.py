@@ -1,0 +1,107 @@
+from person import Person, PersonType
+import numpy as np
+
+class Region:
+    def __init__(self,voter_types,name=""):
+        self.voters=voter_types
+        self.voter_types=list(voter_types.keys())
+        self.amounts = list(voter_types.values())
+        self.name = name
+        assert len(self.voter_types) == len(self.amounts), "Dude What"
+        
+        tot = sum(self.amounts)
+        self.proportions = [x/tot for x in self.amounts]
+
+    def gen_one_random(self):
+        my_guy = np.random.choice(self.voter_types, p=self.proportions)
+        return my_guy()
+
+    def combine(regions,name=None):
+        if name == None:
+            name = "__".join(region.name for region in regions)
+        combined = {}
+        for region in regions:
+            for voter_type, amount in region.voters.items():
+                new_voter_type = voter_type.copy()
+                new_voter_type.region = region.name
+                #print(new_voter_type.region)
+                combined[new_voter_type] = amount
+                #combined[voter_type] = combined.get(voter_type, 0) + amount
+        return Region(combined,name)
+        
+def make_regions():
+    regions = {}
+
+    def bloc(mean, cov, name, region):
+        return PersonType.correlated_gaussian(mean=mean, cov=cov, name=name, region=region)
+
+    cov_tight = [[0.20, 0.05], [0.05, 0.20]]
+    cov_wide  = [[0.45, 0.10], [0.10, 0.45]]
+
+    # NORTH
+    north = "North"
+    regions[north] = Region(
+        {
+            bloc([ 0.2,  0.6], cov_tight, "Urban", north): 0.30,
+            bloc([-0.1,  0.7], cov_wide,  "Rural", north): 0.45,
+            bloc([ 0.0,  0.2], cov_tight, "SmallTown", north): 0.25,
+        },
+        name=north,
+    )
+
+    # SOUTH
+    south = "South"
+    regions[south] = Region(
+        {
+            bloc([-0.1, -0.2], cov_tight, "Urban", south): 0.35,
+            bloc([-0.3, -0.4], cov_wide,  "Rural", south): 0.40,
+            bloc([ 0.2, -0.1], cov_tight, "Coastal", south): 0.25,
+        },
+        name=south,
+    )
+
+    # EAST
+    east = "East"
+    regions[east] = Region(
+        {
+            bloc([-0.4,  0.1], cov_wide,  "Rural", east): 0.55,
+            bloc([-0.1,  0.0], cov_tight, "Urban", east): 0.25,
+            bloc([-0.2,  0.4], cov_tight, "Industrial", east): 0.20,
+        },
+        name=east,
+    )
+
+    # WEST
+    west = "West"
+    regions[west] = Region(
+        {
+            bloc([ 0.5,  0.2], cov_tight, "Urban", west): 0.40,
+            bloc([ 0.2,  0.1], cov_wide,  "Rural", west): 0.35,
+            bloc([ 0.6, -0.1], cov_tight, "Coastal", west): 0.25,
+        },
+        name=west,
+    )
+
+    # CENTRAL
+    central = "Central"
+    regions[central] = Region(
+        {
+            bloc([ 0.0,  0.5], cov_wide,  "Rural", central): 0.55,
+            bloc([ 0.2,  0.3], cov_tight, "SmallTown", central): 0.25,
+            bloc([ 0.3,  0.6], cov_tight, "Urban", central): 0.20,
+        },
+        name=central,
+    )
+
+    # NORTHEAST (smaller, more “regional-party” feeling)
+    ne = "Northeast"
+    regions[ne] = Region(
+        {
+            bloc([-0.5, -0.1], cov_tight, "Hill", ne): 0.45,
+            bloc([-0.3,  0.0], cov_tight, "Town", ne): 0.35,
+            bloc([-0.2,  0.3], cov_wide,  "Rural", ne): 0.20,
+        },
+        name=ne,
+    )
+
+    return regions
