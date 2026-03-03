@@ -40,7 +40,7 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
     distortion = winner_distance / optimal_distance
     return distortion, optimal_cands
         
-def find_worst_groupheuristic(voting_data, cands, winner_set, trials):
+def find_worst_group_heuristic(voting_data, cands, winner_set, trials):
     voter_diameter = max[np.linalg.norm(voter.pos) for voter in voting_data]
 
     for i in range(0,trials):
