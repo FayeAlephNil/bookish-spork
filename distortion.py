@@ -1,5 +1,6 @@
 import numpy as np
 import heapq
+import random
 
 def L1_distance_to_candidate(voting_data, cand_position):
     #cand_position = cand[2]
@@ -9,10 +10,13 @@ def L1_distance_to_candidate(voting_data, cand_position):
     return distance
     
 
-def distortion(voting_data, cands, winner_set, group_name=''):
-    if group_name != '':
+def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
+    if group_name != '' or voter_subset != None:
         old_voting_data_len = len(voting_data)
-        voting_data = [voter for voter in voting_data if voter.name == group_name]
+        if voter_subset != None:
+            voting_data=voter_subset
+        if group_name != '':
+            voting_data = [voter for voter in voting_data if voter.name == group_name]
         group_winner_set_size = int(np.floor(len(winner_set) * len(voting_data)/old_voting_data_len))
         if group_winner_set_size == 0:
             return('Group deserves no winner')
@@ -36,3 +40,11 @@ def distortion(voting_data, cands, winner_set, group_name=''):
     distortion = winner_distance / optimal_distance
     return distortion, optimal_cands
         
+def find_worst_groupheuristic(voting_data, cands, winner_set, trials):
+    voter_diameter = max[np.linalg.norm(voter.pos) for voter in voting_data]
+
+    for i in range(0,trials):
+        center = random.choice(voting_data).pos
+        radius = random.uniform(0,voter_diameter)
+        voters_in_circle = [voter for voter in voting_data if np.linalg.norm(voter.pos-center) < radius]
+        random_group_distortion = distortion(voting_data, cands, winner_set,'', voters_in_circle)
