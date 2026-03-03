@@ -11,7 +11,9 @@ def L1_distance_to_candidate(voting_data, cand_position):
     
 
 def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
-    if group_name != '' or voter_subset != None:
+    if voter_subset == None,
+        voter_subset = voting_data
+    if group_name != '' or voter_subset != voting_data:
         old_voting_data_len = len(voting_data)
         if voter_subset != None:
             voting_data=voter_subset
@@ -39,9 +41,10 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
     winner_distance = sum(L1_distances[k] for k  in list(optimal_winners.keys()))
     distortion = winner_distance / optimal_distance
     return distortion, optimal_cands
-        
+
+
 def find_worst_group_heuristic(voting_data, cands, winner_set, trials):
-    voter_diameter = max[np.linalg.norm(voter.pos) for voter in voting_data]
+    voter_diameter = max([np.linalg.norm(voter.pos) for voter in voting_data])
     worst_group_sofar = [voting_data,1]
 
     for i in range(0,trials):
