@@ -11,7 +11,7 @@ def L1_distance_to_candidate(voting_data, cand_position):
     
 
 def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
-    if voter_subset == None,
+    if voter_subset == None:
         voter_subset = voting_data
     if group_name != '' or voter_subset != voting_data:
         old_voting_data_len = len(voting_data)
