@@ -80,3 +80,8 @@ class PersonType:
             my_guy = np.random.choice(voter_types.keys(), p=voter_types.values())
             return my_guy.gen()
         return PersonType(gen, name, region)
+
+def circle_gauss_system(n,sigma=0.5,size=1):
+    centers = [(size*np.cos(2*np.pi*k/n), size*np.sin(2*np.pi*k/n)) for k in range(0,n)]
+    people = [PersonType.gaussian(c[0],c[1],sigma=sigma,name=f"Party{k}") for k,c in enumerate(centers)]
+    return people

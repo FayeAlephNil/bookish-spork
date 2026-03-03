@@ -1,15 +1,18 @@
-from person import Person, PersonType
+from person import Person, PersonType, circle_gauss_system
+import person
 import numpy as np
 
 class Region:
-    def __init__(self,voter_types,name=""):
+    def __init__(self,voter_types,name="",subregions=[]):
         self.voters=voter_types
         self.voter_types=list(voter_types.keys())
         self.amounts = list(voter_types.values())
         self.name = name
+        self.subregions = subregions
         assert len(self.voter_types) == len(self.amounts), "Dude What"
         
         tot = sum(self.amounts)
+        self.population = tot
         self.proportions = [x/tot for x in self.amounts]
 
     def gen_one_random(self):
@@ -27,7 +30,7 @@ class Region:
                 #print(new_voter_type.region)
                 combined[new_voter_type] = amount
                 #combined[voter_type] = combined.get(voter_type, 0) + amount
-        return Region(combined,name)
+        return Region(combined,name,subregions=regions)
         
 def make_regions():
     regions = {}
@@ -104,4 +107,35 @@ def make_regions():
         name=ne,
     )
 
+    return regions
+
+def tri_party(sigma=0.5):
+    regions = {}
+    parties = person.circle_gauss_system(3,sigma=sigma,size=0.6)
+    north = "North"
+    regions[north] = Region(
+        {
+            parties[0]: 700,
+            parties[1]: 200,
+            parties[2]: 100
+        }
+    )
+
+    central = "Central"
+    regions[central] = Region(
+        {
+            parties[0]: 150,
+            parties[1]: 800,
+            parties[2]: 50 
+        }
+    )
+
+    south = "South"
+    regions[south] = Region(
+        {
+            parties[0]: 350,
+            parties[1]: 50,
+            parties[2]: 600
+        }
+    )
     return regions

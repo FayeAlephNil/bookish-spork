@@ -42,7 +42,7 @@ def display_by_type(voter_data, cands, shape_type, color_type,ax=None):
         c = color_type[d.identifier]
         data_sorted[(s,c)].append(d.pos)
     for k,v in data_sorted.items():
-        ax.scatter([x[0] for x in v],[x[1] for x in v],marker=k[0],color=k[1],alpha=0.25)
+        ax.scatter([x[0] for x in v],[x[1] for x in v],marker=k[0],color=k[1],alpha=0.1)
     for name,pos,color,marker in cands:
         ax.scatter(pos[0],pos[1], marker=marker,color=color)
         ax.annotate(name,pos)
