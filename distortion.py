@@ -53,6 +53,6 @@ def find_worst_group_heuristic(voting_data, cands, winner_set, trials):
         voters_in_circle = [voter for voter in voting_data if np.linalg.norm(voter.pos-center) < radius]
         random_group_distortion = distortion(voting_data, cands, winner_set,'', voters_in_circle)[0]
         if random_group_distortion > worst_group_sofar[1]:
-            worst_group_sofar = [voters_in_circle, random_group_distortion]
+            worst_group_sofar = [voters_in_circle, random_group_distortion,center, radius]
     
     return worst_group_sofar
