@@ -200,7 +200,7 @@ class Simulation:
                 dist,_ = distortion(data, cands, winners, group_name=name)
                 group_dists[name] = dist
 
-            global_dist = distortion(data,cands,winners)
+            global_dist,_ = distortion(data,cands,winners)
 
             return {
                 'locals': local_elecs,
