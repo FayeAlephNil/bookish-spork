@@ -46,7 +46,7 @@ def spatial_profile_from_types_profile_marked_data(
     number_of_ballots: int,
     candidates: list[str],
     voter_dist: Callable[..., np.ndarray] = np.random.uniform,
-    voter_dist_kwargs: Optional[Dict[str, Any]] = None,
+    voter_dist_kwargs: Optional[Dict[str, Any]] = {},
     candidate_dist: Callable[..., np.ndarray] = np.random.uniform,
     candidate_dist_kwargs: Optional[Dict[str, Any]] = None,
     distance: Callable[[np.ndarray, np.ndarray], float] = euclidean_dist,
@@ -75,11 +75,12 @@ def spatial_profile_from_types_profile_marked_data(
             voter_dist_kwargs = {"low": 0.0, "high": 1.0, "size": 2.0}
         else:
             voter_dist_kwargs = {}
+    voter_dist_kwargs_new  = voter_dist_kwargs | {'num_samples': number_of_ballots}
 
-    try:
-        voter_dist(**voter_dist_kwargs)
-    except TypeError:
-        raise TypeError("Invalid kwargs for the voter distribution.")
+#    try:
+#        voter_dist(1, **voter_dist_kwargs)
+#    except TypeError:
+#        raise TypeError("Invalid kwargs for the voter distribution.")
 
     if candidate_dist_kwargs is None:
         if candidate_dist is np.random.uniform:
@@ -87,28 +88,26 @@ def spatial_profile_from_types_profile_marked_data(
         else:
             candidate_dist_kwargs = {}
 
-    try:
-        candidate_dist(**candidate_dist_kwargs)
-    except TypeError:
-        raise TypeError("Invalid kwargs for the candidate distribution.")
-
-    try:
-        v = voter_dist(**voter_dist_kwargs)
-        c = candidate_dist(**candidate_dist_kwargs)
-        distance(v.pos, c)
-    except TypeError:
-        raise TypeError(
-            "Distance function is invalid or incompatible "
-            "with voter/candidate distributions."
-        )
-
+#    try:
+#        candidate_dist(**candidate_dist_kwargs)
+#    except TypeError:
+#        raise TypeError("Invalid kwargs for the candidate distribution.")
+#
+#    try:
+#        v = voter_dist(1, **voter_dist_kwargs)[0]
+#        c = candidate_dist(**candidate_dist_kwargs)
+#        distance(v.pos, c)
+#    except TypeError:
+#        raise TypeError(
+#            "Distance function is invalid or incompatible "
+#            "with voter/candidate distributions."
+#        )
+#
     candidate_position_dict = {
         c: candidate_dist(**candidate_dist_kwargs) for c in candidates
     }
 
-    voters = np.array(
-        [voter_dist(**voter_dist_kwargs) for _ in range(number_of_ballots)]
-    )
+    voters = voter_dist(**voter_dist_kwargs_new)
     voter_positions = np.array([v.pos for v in voters])
 
     prof = profile_from_positions(candidate_position_dict, voter_positions,distance=distance)

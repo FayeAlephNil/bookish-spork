@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from collections import defaultdict
 
-def prepare_candidates_for_display(cand_pos, cand_colors, winners=None, winner_color = 'm',cand_markers=None):
+def prepare_candidates_for_display(cand_pos, cand_colors, winners=None, winner_color = 'm',winner_marker='^',cand_markers=None):
     cands = []
     for k,pos in cand_pos.items():
         color = cand_colors[k]
+        marker = 'o'
         if winners != None and k in winners:
             color = winner_color
-        cands.append((k,pos,color,'+'))
+            marker = winner_marker
+        cands.append((k,pos,color,marker))
     return cands
 
 def gen_voter_display_type(voter_names, voter_regions):

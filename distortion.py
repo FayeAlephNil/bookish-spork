@@ -15,8 +15,7 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
         voter_subset = voting_data
     if group_name != '' or len(voter_subset) != len(voting_data):
         old_voting_data_len = len(voting_data)
-        if voter_subset != None:
-            voting_data=voter_subset
+        voting_data = voter_subset
         if group_name != '':
             voting_data = [voter for voter in voting_data if voter.name == group_name]
         group_winner_set_size = int(np.floor(len(winner_set) * len(voting_data)/old_voting_data_len))
@@ -56,3 +55,4 @@ def find_worst_group_heuristic(voting_data, cands, winner_set, trials):
             worst_group_sofar = [voters_in_circle, random_group_distortion,center, radius]
     
     return worst_group_sofar
+

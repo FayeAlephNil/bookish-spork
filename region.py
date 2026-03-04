@@ -3,23 +3,34 @@ import person
 import numpy as np
 
 class Region:
-    def __init__(self,voter_types,name="",subregions=[]):
-        self.voters=voter_types
-        self.voter_types=list(voter_types.keys())
-        self.amounts = list(voter_types.values())
+    def __init__(self,voters,name="",subregions=[],deterministic=False):
+        self.voters=voters
+        self.voter_types=list(voters.keys())
+        self.amounts = list(voters.values())
         self.name = name
         self.subregions = subregions
-        assert len(self.voter_types) == len(self.amounts), "Dude What"
+        assert len(self.voters) == len(self.amounts), "Dude What"
         
         tot = sum(self.amounts)
         self.population = tot
         self.proportions = [x/tot for x in self.amounts]
+        self.deterministic = deterministic
 
     def gen_one_random(self):
         my_guy = np.random.choice(self.voter_types, p=self.proportions)
         return my_guy()
 
-    def combine(regions,name=None):
+    def gen_random(self, num_samples=1):
+        if self.deterministic:
+            arr = np.array([])
+            for v_type, amt in self.voters.items():
+                add_arr = np.array([v_type() for i in range(0,amt)])
+                arr = np.concatenate((arr,add_arr))
+            return arr
+        else:
+            return np.array([self.gen_one_random() for i in range(0,num_samples)])
+
+    def combine(regions,name=None,deterministic=False):
         if name == None:
             name = "__".join(region.name for region in regions)
         combined = {}
@@ -30,7 +41,8 @@ class Region:
                 #print(new_voter_type.region)
                 combined[new_voter_type] = amount
                 #combined[voter_type] = combined.get(voter_type, 0) + amount
-        return Region(combined,name,subregions=regions)
+        return Region(combined,name,
+                      subregions=regions,deterministic=deterministic)
         
 def make_regions():
     regions = {}

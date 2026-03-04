@@ -17,6 +17,13 @@ class Person:
         self.name = name
         self.region = region
 
+    def copy(self):
+        return Person(self.pos, self.identifier, self.name, self.region)
+
+    def change_name(self,new_name):
+        self.name = new_name
+        self.identifier = self.region + '.' + self.name
+
 class PersonType:
     def __init__(self, generator,name="", region=""):
         self.gen = generator
@@ -81,7 +88,7 @@ class PersonType:
             return my_guy.gen()
         return PersonType(gen, name, region)
 
-def circle_gauss_system(n,sigma=0.5,size=1):
-    centers = [(size*np.cos(2*np.pi*k/n), size*np.sin(2*np.pi*k/n)) for k in range(0,n)]
+def circle_gauss_system(n,offset=0,sigma=0.5,size=1):
+    centers = [(size*np.cos(2*np.pi*k/n+offset), size*np.sin(2*np.pi*k/n+offset)) for k in range(0,n)]
     people = [PersonType.gaussian(c[0],c[1],sigma=sigma,name=f"Party{k}") for k,c in enumerate(centers)]
     return people
