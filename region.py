@@ -152,9 +152,10 @@ def tri_party(sigma=0.5):
     )
     return regions
 
-def two_bloc_weighted(bias=0.5, sigma=0.5, size=0.6,tot=1000):
+def two_bloc_weighted(bias=0.5, sigma=0.5, size=0.6,tot=1000,parties=None):
     regions = {}
-    parties = person.circle_gauss_system(2,sigma=sigma,size=size,offset=np.pi/2)
+    if parties == None:
+        parties = person.circle_gauss_system(2,sigma=sigma,size=size,offset=np.pi/2)
     state_1 = "Party1State"
     state_2 = "Party2State"
     each_state = tot//2

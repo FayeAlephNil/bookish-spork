@@ -80,7 +80,7 @@ def from_region_to_display(region,election_type=STV,num_cands=20, num_winners=3,
         if show_distortion:
             dist,_ = distortion(data, cands, winners)
             display_by_type(data,cands_data,*voter_display_info,ax=ax)
-            ax.text(0.95, 0.95, f'Distortion: {round(dist[0],3)}',
+            ax.text(0.95, 0.95, f'Distortion: {round(dist,3)}',
                 horizontalalignment='right',
                 verticalalignment='top',
                 transform=ax.transAxes, # Use axes coordinates (0 to 1)
@@ -91,6 +91,12 @@ def from_region_to_display(region,election_type=STV,num_cands=20, num_winners=3,
     else:
         display_by_type(data,[],*voter_display_info,ax=ax)
         return plt.show()
+
+def det_cand_dist(cands):
+    it = iter(cands)
+    def dist():
+        return next(it)
+    return dist
         
 class Simulation:
     def __init__(self, region,cand_dist=np.random.uniform,cand_kwargs=None,seed=None):
@@ -131,7 +137,7 @@ class Simulation:
         prof = vote['profile']
         cands = vote['candidates']
         voters = vote['voters']
-        winners = clean_winners(election_type(prof,m=num_winners).get_elected())
+        winners = clean_winners(election_type(prof,m=num_winners,tiebreak='random').get_elected())
         global_dist,_ = distortion(voters, cands, winners)
 
         group_dists = {}
@@ -172,7 +178,6 @@ class Simulation:
                 prof = prof + vote['profile']
             cands = cands | vote['candidates']
             voters = np.concatenate((voters, vote['voters']))
-        
         national = {
             'profile': prof,
             'candidates': cands,
