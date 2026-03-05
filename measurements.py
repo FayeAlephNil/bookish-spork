@@ -224,7 +224,8 @@ def proportional_assignment_cost(
     cst_array: NDArray,  
     voter_labels: NDArray, 
     bloc_label: int,
-    k : int
+    k : int,
+    interpolate = False
 ) -> float:  
     """
     Given voters and candidates in an input cost array, finds the lowest cost 
@@ -244,8 +245,13 @@ def proportional_assignment_cost(
     _, n = cst_array.shape
     bloc_size = np.sum(voter_labels == bloc_label)
     bloc_array = cst_array[:, voter_labels == bloc_label]
-    size = int(bloc_size / n * k)
-    return min_assignment_cost(bloc_array, size)
+    size_floor = int(np.floor(bloc_size / n * k))
+    size_ceil = int(np.ceil(bloc_size / n * k))
+    interp = (bloc_size / n * k)-int(np.floor(bloc_size / n * k))
+    if interpolate == False:
+        return min_assignment_cost(bloc_array, size_floor)
+    else:
+        return np.array([min_assignment_cost(bloc_array, size_floor), min_assignment_cost(bloc_array, size_ceil)]), interp
 
 
 
@@ -253,7 +259,8 @@ def group_inefficiency(
     cst_array: NDArray, 
     winner_indices: NDArray, 
     voter_labels: NDArray, 
-    bloc_label: int
+    bloc_label: int,
+    interpolate = True
 ) -> float:
     """
     Computes the group inefficiency score as the cost ratio between
@@ -274,23 +281,36 @@ def group_inefficiency(
         float: Group inefficiency score.
     """
     k = len(winner_indices)
-    cost1 = proportional_assignment_cost(
+    cost1, interp = proportional_assignment_cost(
         cst_array[winner_indices, :],
         voter_labels,
         bloc_label,
-        k
+        k,
+        interpolate
     )
-    cost2 = proportional_assignment_cost(
+    cost2, interp = proportional_assignment_cost(
         cst_array,
         voter_labels,
         bloc_label,
-        k
+        k,
+        interpolate
     )
     
-    if cost1 == 0 and cost2 == 0:
-        return 1
-    
-    return cost1 / cost2
+    if interpolate == True:
+        if cost1[0]==0 and cost2[0]==0:
+            if cost1[1] == 0 and cost2[1] == 0:
+                return 1
+            return cost1[1] / cost2[1]
+        if cost1[1] == 0 and cost2[1] == 0:
+            return cost1[0] / cost2[0]
+        
+        bloc_size = np.sum(voter_labels == bloc_label)
+        return cost1[0]/cost2[0] + interp * (cost1[1]/cost2[1]-cost1[0]/cost2[0])
+        
+    else:
+        if cost1 == 0 and cost2 == 0:
+            return 1
+        return cost1 / cost2
 
 
 def random_group_inefficiency(

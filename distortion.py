@@ -10,7 +10,7 @@ def L1_distance_to_candidate(voting_data, cand_position):
     return distance
     
 
-def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
+def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None, interpolate=True):
     if voter_subset == None:
         voter_subset = voting_data
     if group_name != '' or len(voter_subset) != len(voting_data):
@@ -18,11 +18,21 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
         voting_data = voter_subset
         if group_name != '':
             voting_data = [voter for voter in voting_data if voter.name == group_name]
-        group_winner_set_size = int(np.floor(len(winner_set) * len(voting_data)/old_voting_data_len))
-        if group_winner_set_size == 0:
-            return 1, []
+        if interpolate==True:
+            group_winner_set_size = np.array([int(np.floor(len(winner_set) * len(voting_data)/old_voting_data_len)),int(np.ceil(len(winner_set) * len(voting_data)/old_voting_data_len))])
+            if group_winner_set_size[1] == 0:
+                return 1, []
+        else:
+            group_winner_set_size = int(np.floor(len(winner_set) * len(voting_data)/old_voting_data_len))
+            if group_winner_set_size == 0:
+                return 1, []
+        group_proportion = len(winner_set) * len(voting_data)/old_voting_data_len
     else:
-        group_winner_set_size = len(winner_set)
+        group_proportion = 1
+        if interpolate == False:
+            group_winner_set_size = len(winner_set)
+        else:
+            group_winner_set_size = [len(winner_set),len(winner_set)]
 
     
     winner_dict = {k: cands[k] for k in winner_set if k in cands}
@@ -32,14 +42,38 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None):
         
     L1_distances_winners = {k:L1_distances[k] for k in L1_distances if k in winner_dict.keys()}
         
-    optimal_cands = dict(heapq.nsmallest(group_winner_set_size, L1_distances.items(), key=lambda kv: kv[1]))
-    optimal_winners = dict(heapq.nsmallest(group_winner_set_size, L1_distances_winners.items(), key=lambda kv: kv[1]))
+    if interpolate == False:
+        optimal_cands = dict(heapq.nsmallest(group_winner_set_size, L1_distances.items(), key=lambda kv: kv[1]))
+        optimal_winners = dict(heapq.nsmallest(group_winner_set_size, L1_distances_winners.items(), key=lambda kv: kv[1]))
+
+        optimal_distance = sum(L1_distances[k] for k in list(optimal_cands.keys()))
+        winner_distance = sum(L1_distances[k] for k  in list(optimal_winners.keys()))
+
+        return distortion, optimal_cands
+
+
+    else:
+        optimal_cands = [dict(heapq.nsmallest(group_winner_set_size[0], L1_distances.items(), key=lambda kv: kv[1])),dict(heapq.nsmallest(group_winner_set_size[1], L1_distances.items(), key=lambda kv: kv[1]))]
+        optimal_winners = [dict(heapq.nsmallest(group_winner_set_size[0], L1_distances_winners.items(), key=lambda kv: kv[1])),dict(heapq.nsmallest(group_winner_set_size[1], L1_distances_winners.items(), key=lambda kv: kv[1]))]
+        optimal_distance = [sum(L1_distances[k] for k in list(optimal_cands[0].keys())),sum(L1_distances[k] for k in list(optimal_cands[1].keys()))]
+        winner_distance = [sum(L1_distances[k] for k  in list(optimal_winners[0].keys())),sum(L1_distances[k] for k  in list(optimal_winners[1].keys()))]
+
+        distortion_floor=1
+        distortion_ceil=1
+        if optimal_distance[0] != 0:
+            distortion_floor = winner_distance[0] / optimal_distance[0]
+
+        if optimal_distance[1] != 0:
+            distortion_ceil = winner_distance[1] / optimal_distance[1]
+
+        distortion = [distortion_floor, distortion_ceil]
+        distortion_interpolated = distortion[0] + (group_proportion-np.floor(group_proportion))*(distortion[1]-distortion[0])
+
+        return distortion_interpolated, optimal_cands
+
 
     
-    optimal_distance = sum(L1_distances[k] for k in list(optimal_cands.keys()))
-    winner_distance = sum(L1_distances[k] for k  in list(optimal_winners.keys()))
-    distortion = winner_distance / optimal_distance
-    return distortion, optimal_cands
+        
 
 
 def find_worst_group_heuristic(voting_data, cands, winner_set, trials):
