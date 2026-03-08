@@ -1,11 +1,13 @@
 from person import Person, PersonType, circle_gauss_system
 import person
 import numpy as np
+import matplotlib.colors
 
 class Region:
-    def __init__(self,voters,name="",subregions=[],deterministic=False):
+    def __init__(self,voters,name="",subregions=[],deterministic=False,marker='v',color_dict=None):
         self.voters=voters
         self.voter_types=list(voters.keys())
+        
         self.amounts = list(voters.values())
         self.name = name
         self.subregions = subregions
@@ -15,16 +17,28 @@ class Region:
         self.population = tot
         self.proportions = [x/tot for x in self.amounts]
         self.deterministic = deterministic
+        self.marker = marker
+
+        num_voter_types = len(self.voter_types)
+        if color_dict == None:
+            self.color_dict = {}
+            for i,p in enumerate(self.voter_types):
+                self.color_dict[p] = matplotlib.colors.hsv_to_rgb((i/num_voter_types,1,1))
+        else:
+            self.color_dict = color_dict
 
     def gen_one_random(self):
         my_guy = np.random.choice(self.voter_types, p=self.proportions)
-        return my_guy()
+        voter = my_guy()
+        voter.marker = self.marker
+        voter.color = self.color_dict[my_guy]
+        return voter
 
     def gen_random(self, num_samples=1):
         if self.deterministic:
             arr = np.array([])
             for v_type, amt in self.voters.items():
-                add_arr = np.array([v_type() for i in range(0,amt)])
+                add_arr = np.array([v_type(color=self.color_dict[v_type],marker=self.marker) for i in range(0,amt)])
                 arr = np.concatenate((arr,add_arr))
             return arr
         else:
@@ -170,3 +184,4 @@ def two_bloc_weighted(bias=0.5, sigma=0.5, size=0.6,tot=1000,parties=None):
     })
 
     return regions
+

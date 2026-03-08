@@ -5,12 +5,97 @@ from distortion import distortion
 import matplotlib.pyplot as plt
 import matplotlib.colors
 from collections import defaultdict
+import numpy as np
 
-def prepare_candidates_for_display(cand_pos, cand_colors, winners=None, winner_color = 'm',winner_marker='^',cand_markers=None):
+def place_voters_ax(voters,ax=None, opacity=0.1,show_names=False):
+    if ax == None:
+        fig,ax = plt.subplots()
+    scatters = {}
+    for v in voters:
+        color_key = tuple(v.color) if isinstance(v.color, np.ndarray) else v.color
+        the_guy = scatters.get((color_key,v.marker),None)
+        if the_guy is None:
+            the_guy = np.array([[],[]])
+        scatters[(color_key,v.marker)] = np.append(the_guy, [[v.pos[0]],[v.pos[1]]], axis=1)
+        if show_names:
+            ax.annotate(v.name, v.pos)
+    for col_mark, arr in scatters.items():
+        ax.scatter(arr[0,:],arr[1,:], color=col_mark[0], marker=col_mark[1],alpha=opacity)
+    return ax
+
+def add_dists_ax(ax,total_dist, group_dists, group_colors, x=0.95, y=0.95,offset=0.05,fontsize=10):
+    ax.text(x, y, f'Distortion: {round(total_dist,3)}',
+    horizontalalignment='right',
+    verticalalignment='top',
+    transform=ax.transAxes, # Use axes coordinates (0 to 1)
+    fontsize=10,
+    #bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5) # Optional: add a text box
+    )
+
+    i = 1
+    siz = offset
+    for name,group_dist in group_dists.items():
+        ax.text(x, y-i*offset, f'Distortion: {round(group_dist,3)}',
+        horizontalalignment='right',
+        verticalalignment='top',
+        transform=ax.transAxes, # Use axes coordinates (0 to 1)
+        fontsize=fontsize,
+        color=group_colors[name]
+        #bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5) # Optional: add a text box
+        )
+        i+=1
+    return ax
+
+def make_group_colors(group_dists,voters):
+    group_colors = {}
+    for key in group_dists.keys():
+        for v in voters:
+            if v.name == key:
+                group_colors[v.name] = v.color
+                break
+    return group_colors
+
+def build_ax(result, ax, display_cands=True, show_distortion=True, show_group_dist=True, opacity=0.1,x_dist=0.95,y_dist=0.95,winner_color='m',cand_color='g'):
+    cands_for_disp = []
+    candidates = result.get('candidates',[])
+    winners = result.get('winners',[])
+    voters = result.get('voters',[])
+    group_dists = result.get('group_dists', {})
+    for k,pos in candidates.items(): 
+        color = cand_color
+        if k in winners:
+            color = winner_color
+        cand_disp = Person(pos,color=color,marker='+',name=k)
+        cands_for_disp.append(cand_disp)
+    ax = place_voters_ax(voters,opacity=opacity,ax=ax,show_names=False)
+    if display_cands:
+        ax = place_voters_ax(cands_for_disp,opacity=None,ax=ax,show_names=True)
+    if show_distortion:
+        if show_group_dist:
+            group_colors = make_group_colors(group_dists, voters)
+            ax = add_dists_ax(ax,result['distortion'],group_dists,group_colors,x=x_dist,y=y_dist)
+        else:
+            ax = add_dists_ax(ax,result['distortion'],{},{},x=x_dist,y=y_dist)
+    return ax
+
+def display(result, ax_kwargs=None, opacity=0.1,xlim=(-1,1),ylim=(1,1), show_it=True,save_at=None):
+    if ax_kwargs == None:
+        ax_kwargs = {}
+    fig,ax = plt.subplots()
+    ax = build_ax(result,ax,**ax_kwargs)
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    if save_at != None:
+        plt.savefig(save_at, bbox_inches='tight', dpi=300)
+    if show_it:
+        plt.show()
+    return ax
+
+def prepare_candidates_for_display(cand_pos, cand_colors, winners=None, winner_color = 'm',winner_marker='+',cand_markers=None):
     cands = []
     for k,pos in cand_pos.items():
         color = cand_colors[k]
-        marker = 'o'
+        marker = '+'
         if winners != None and k in winners:
             color = winner_color
             marker = winner_marker

@@ -11,14 +11,16 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 
 class Person:
-    def __init__(self, pos, identifier="", name="", region=""):
+    def __init__(self, pos, identifier="", name="", region="",color='r', marker='o'):
         self.pos = pos
         self.identifier = identifier
         self.name = name
         self.region = region
+        self.color = color
+        self.marker = marker
 
     def copy(self):
-        return Person(self.pos, self.identifier, self.name, self.region)
+        return Person(self.pos, self.identifier, self.name, self.region,color=self.color,marker=self.marker)
 
     def change_name(self,new_name):
         self.name = new_name
@@ -33,9 +35,9 @@ class PersonType:
     def identifier(self):
         return self.region + '.' + self.name
     
-    def __call__(self):
+    def __call__(self,**kwargs):
         # Generate one voter
-        return Person(self.gen(),self.identifier(), self.name, self.region)
+        return Person(self.gen(),self.identifier(), self.name, self.region,color=kwargs.get('color','r'),marker=kwargs.get('marker','o'))
 
     def copy(self):
         return PersonType(self.gen, self.name, self.region)
@@ -92,3 +94,38 @@ def circle_gauss_system(n,offset=0,sigma=0.5,size=1):
     centers = [(size*np.cos(2*np.pi*k/n+offset), size*np.sin(2*np.pi*k/n+offset)) for k in range(0,n)]
     people = [PersonType.gaussian(c[0],c[1],sigma=sigma,name=f"Party{k}") for k,c in enumerate(centers)]
     return people
+
+def centrists(sigma=0.5,size=0.6):
+    party_lst = circle_gauss_system(2,sigma=sigma,size=size,offset=np.pi/2)
+    centrist = PersonType.gaussian(0,0,sigma=sigma,name="Center")
+    parties = {}
+    party_lst[0].name = 'Up'
+    party_lst[1].name = 'Down'
+    parties['Up'] = party_lst[0]
+    parties['Down'] = party_lst[1]
+    parties['Center'] = centrist
+    return parties
+
+def extreme_third_party(sigma=0.5,size=0.6):
+    party_lst = circle_gauss_system(2,sigma=sigma,size=size,offset=np.pi/2)
+    extreme = PersonType.gaussian(0,2*size,sigma=sigma,name="Extreme")
+    parties = {}
+    party_lst[0].name = 'Up'
+    party_lst[1].name = 'Down'
+    parties['Up'] = party_lst[0]
+    parties['Down'] = party_lst[1]
+    parties['Extreme'] = extreme
+    return parties
+
+def fringes(sigma=0.5,size=0.6):
+    party_lst = circle_gauss_system(2,sigma=sigma,size=size,offset=np.pi/2)
+    extreme_up = PersonType.gaussian(0,2*size,sigma=sigma,name="ExtremeUp")
+    extreme_down = PersonType.gaussian(0,-2*size,sigma=sigma,name="ExtremeDown")
+    parties = {}
+    party_lst[0].name = 'Up'
+    party_lst[1].name = 'Down'
+    parties['Up'] = party_lst[0]
+    parties['Down'] = party_lst[1]
+    parties['ExtremeUp'] = extreme_up
+    parties['ExtremeDown'] = extreme_down
+    return parties
