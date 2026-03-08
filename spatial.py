@@ -17,18 +17,20 @@ from votekit.elections import STV,Borda,Plurality
 def profile_from_positions(candidate_pos_dict, voter_pos_arr, distance=euclidean_dist):
     candidates = candidate_pos_dict.keys()
     num_ballots = len(voter_pos_arr)
-    ballot_pool = np.full((num_ballots, len(candidates)), frozenset("~"))
-
+    num_cands = len(candidates)
+    ballot_pool = np.full((num_ballots, num_cands), frozenset("~"))
+    cost_array = np.zeros((num_cands,num_ballots))
     for i, pos in enumerate(voter_pos_arr):
         distance_tuples = [
             (c, distance(pos, c_position))
             for c, c_position, in candidate_pos_dict.items()
         ]
+        cost_array[:,i] = np.array([d for _,d in distance_tuples])
         candidate_ranking = np.array(
             [frozenset({t[0]}) for t in sorted(distance_tuples, key=lambda x: x[1])]
         )
         ballot_pool[i] = candidate_ranking
-
+    
     n_candidates = len(candidates)
     df = pd.DataFrame(ballot_pool)
     df.index.name = "Ballot Index"
@@ -40,7 +42,7 @@ def profile_from_positions(candidate_pos_dict, voter_pos_arr, distance=euclidean
             candidates=candidates,
             df=df,
             max_ranking_length=n_candidates,
-        )
+        ), cost_array
 
 def spatial_profile_from_types_profile_marked_data(
     number_of_ballots: int,
@@ -110,9 +112,10 @@ def spatial_profile_from_types_profile_marked_data(
     voters = voter_dist(**voter_dist_kwargs_new)
     voter_positions = np.array([v.pos for v in voters])
 
-    prof = profile_from_positions(candidate_position_dict, voter_positions,distance=distance)
+    prof,cost_array = profile_from_positions(candidate_position_dict, voter_positions,distance=distance)
     return (
         prof,
         candidate_position_dict,
-        voters
+        voters,
+        cost_array
     )

@@ -43,13 +43,14 @@ def alph_seq(limit):
     
     return sequence
 
-def region_generator(region,num_ballots,candidate_list,candidate_dist,cand_kwargs):
+def region_generator(region,num_ballots,candidate_list,candidate_dist,cand_kwargs,dist=euclidean_dist):
     return spatial_profile_from_types_profile_marked_data(
         number_of_ballots= num_ballots,
         candidates= candidate_list,
         voter_dist=region.gen_random,
         candidate_dist = candidate_dist,
-        candidate_dist_kwargs=cand_kwargs)
+        candidate_dist_kwargs=cand_kwargs,
+        distance=dist)
 
 def clean_winners(wins):
     winners = []
@@ -61,7 +62,7 @@ def clean_winners(wins):
 def from_region_to_display(region,election_type=STV,num_cands=20, num_winners=3,display_cands=True,show_distortion=True):
     cand_dist = np.random.uniform
     cand_kwargs = {'low': (-1,-1), 'high': (1,1), 'size': 2}
-    prof, cands, data = region_generator(region,200, alph_seq(num_cands), cand_dist,cand_kwargs)
+    prof, cands, data,cost_array = region_generator(region,200, alph_seq(num_cands), cand_dist,cand_kwargs)
 
     voter_names = []
     region_names = []
@@ -99,7 +100,7 @@ def det_cand_dist(cands):
     return dist
         
 class Simulation:
-    def __init__(self, region,cand_dist=np.random.uniform,cand_kwargs=None,seed=None):
+    def __init__(self, region,cand_dist=np.random.uniform,cand_kwargs=None,seed=None,dist=euclidean_dist):
         if seed == None:
             self.seed = np.random.get_state()[1][0]
             np.random.seed(self.seed)
@@ -116,33 +117,40 @@ class Simulation:
             self.region_names.append(voter.region)
         self.cand_dist = cand_dist
         self.cand_kwargs = cand_kwargs
+        self.dist = dist
 
     def run_national_vote_named_cands(self, cand_names, num_ballots):
-        prof, cands, data = region_generator(self.region, num_ballots, cand_names, self.cand_dist,self.cand_kwargs)
+        prof, cands, data,cost_array = region_generator(self.region, num_ballots, cand_names, self.cand_dist,self.cand_kwargs)
         return {
             'profile': prof,
             'candidates': cands,
-            'voters': data
+            'voters': data,
+            'cost_array': cost_array
         }
 
     def run_national_vote(self, num_cands, num_ballots):
-        prof, cands, data = region_generator(self.region, num_ballots, alph_seq(num_cands), self.cand_dist,self.cand_kwargs)
+        prof, cands, data,cst_arr = region_generator(self.region, num_ballots, alph_seq(num_cands), self.cand_dist,self.cand_kwargs,dist=self.dist)
         return {
             'profile': prof,
             'candidates': cands,
-            'voters': data
+            'voters': data,
+            'cost_array': cst_arr
         }
 
-    def run_national_election(self, vote, num_winners=3,election_type=STV):
+    def run_national_election(self, vote, num_winners=3,election_type=STV,interpolate=False):
         prof = vote['profile']
         cands = vote['candidates']
         voters = vote['voters']
         winners = clean_winners(election_type(prof,m=num_winners,tiebreak='random').get_elected())
-        global_dist,_ = distortion(voters, cands, winners)
+        elec = {}
+        elec['winners'] = winners
+        elec['candidates'] = cands
+        elec['voters'] = voters
+        global_dist = self.global_distortion(elec,interpolate=interpolate)
 
         group_dists = {}
         for name in self.voter_names:
-            dist,_ = distortion(voters, cands, winners, group_name=name)
+            dist = self.distortion_name(elec, name=name,interpolate=interpolate)
             group_dists[name] = dist
 
         return {
@@ -155,7 +163,7 @@ class Simulation:
         }
 
     def run_local_votes(self, num_cands, num_ballots):
-        simulations = [(r.population/self.region.population, Simulation(r,self.cand_dist,self.cand_kwargs)) for r in self.region.subregions]
+        simulations = [(r.population/self.region.population, Simulation(r,self.cand_dist,self.cand_kwargs,dist=self.dist)) for r in self.region.subregions]
         cand_names = alph_seq(num_cands)
         locals = []
         idx = 0
@@ -193,31 +201,36 @@ class Simulation:
             
             cands = {}
             winners = []
-            data = np.array([])
+            voters = np.array([])
             for _,x in local_elecs:
 
                 cands = cands | x['candidates']
                 winners += x['winners']
-                data = np.concatenate((data,x['voters']))
+                voters = np.concatenate((voters,x['voters']))
+
+            elec = {}
+            elec['voters'] = voters
+            elec['winners'] = winners
+            elec['candidates'] = cands
 
             group_dists = {}
             for name in self.voter_names:
-                dist,_ = distortion(data, cands, winners, group_name=name)
+                dist = self.distortion_name(elec, name=name)
                 group_dists[name] = dist
 
-            global_dist,_ = distortion(data,cands,winners)
+            global_dist = self.global_distortion(elec)
 
             return {
                 'locals': local_elecs,
                 'group_dists': group_dists,
                 'candidates': cands,
-                'voters': data,
+                'voters': voters,
                 'winners': winners,
                 'distortion': global_dist ,
                 'region': self.region
             }
 
-    def display(self, result,display_cands=True,show_distortion=True):
+    def display(self, result,display_cands=True,show_distortion=True, show_group_dist=True,opacity=0.1,xlim=None,ylim=None,save_at=None):
         winners = result['winners']
         data = result['voters']
         cands = result['candidates']
@@ -235,10 +248,14 @@ class Simulation:
                 colors_long_names[v.identifier] = 'k'
 
         fig,ax=plt.subplots()
+        if xlim != None:
+            plt.xlim(*xlim)
+        if ylim != None:
+            plt.ylim(*ylim)
     
         if display_cands:
             cands_data = prepare_candidates_for_display(cands, defaultdict(lambda: 'g'), winners=winners)
-            display_by_type(data,cands_data,*voter_display_info,ax=ax)
+            display_by_type(data,cands_data,*voter_display_info,ax=ax,opacity=opacity)
             if show_distortion:
                 dist = result['distortion']
                 ax.text(0.95, 0.95, f'Distortion: {round(dist,3)}',
@@ -246,12 +263,61 @@ class Simulation:
                 verticalalignment='top',
                 transform=ax.transAxes, # Use axes coordinates (0 to 1)
                 fontsize=10,
-                bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5) # Optional: add a text box
-               )
-            return plt.show()
+                #bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5) # Optional: add a text box
+                )
+            if show_group_dist:
+                i = 1
+                siz = 0.05
+                for name,group_dist in result['group_dists'].items():
+                    ax.text(0.95, 0.95-i*siz, f'Distortion: {round(group_dist,3)}',
+                    horizontalalignment='right',
+                    verticalalignment='top',
+                    transform=ax.transAxes, # Use axes coordinates (0 to 1)
+                    fontsize=10,
+                    color=colors[name]
+                    #bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5) # Optional: add a text box
+                    )
+                    i+=1
         else:
-            display_by_type(data,[],*voter_display_info,ax=ax)
-            return plt.show()
+            display_by_type(data,[],*voter_display_info,ax=ax,opacity=opacity)
+        if save_at != None:
+            plt.savefig(save_at, bbox_inches='tight', dpi=300)
+        return plt.show()
+
+    def distortion_name(self,elec,name,dist=None,interpolate=False):
+        if dist == None:
+            dist = self.dist
+        subset = []
+        for v in elec['voters']:
+            if v.name == name:
+                subset.append(v)
+        return self.subset_distortion(elec,subset,dist=dist,interpolate=interpolate)
+
+    def global_distortion(self,elec,dist=None,interpolate=False):
+        if dist == None:
+            dist = self.dist
+        cst_arr, winner_idxs = self.prepare_for_meas(elec,dist=dist)
+        voter_labels = np.zeros(len(elec['voters']))
+        return measurements.group_inefficiency(cst_arr,winner_idxs,voter_labels, 0,interpolate=interpolate)
+
+    def subset_distortion(self, elec, subset, dist=None,interpolate=False):
+        if dist == None:
+            dist = self.dist
+        cst_arr, winner_idxs = self.prepare_for_meas(elec,dist=dist)
+        voter_labels = np.zeros(len(elec['voters']))
+        for i,v in enumerate(elec['voters']):
+            if v in subset:
+                voter_labels[i] = 1
+        return measurements.group_inefficiency(cst_arr,winner_idxs,voter_labels, 1,interpolate=interpolate)
+
+    def idx_distortion(self,elec,idxs,dist=None,interpolate=False):
+        if dist == None:
+            dist = self.dist
+        cst_arr, winner_idxs = self.prepare_for_meas(elec,dist=dist)
+        voter_labels = np.zeros(len(elec['voters']))
+        voter_labels[idxs] = 1
+        return measurements.group_inefficiency(cst_arr,winner_idxs,voter_labels, 1,interpolate=interpolate)
+
 
     def prepare_for_meas(self,elec,dist=euclidean_dist):
         voters = [v.copy() for v in elec['voters']]
@@ -266,12 +332,14 @@ class Simulation:
                 cost_array[i,j] = dist(v.pos, cands[c_name])
         return cost_array,winner_idxs
 
-    def worst_random(self,elec,n_samples=100,dist=euclidean_dist):
+    def worst_random(self,elec,n_samples=100,dist=None,interpolate=False):
+        if dist == None:
+            dist = self.dist
         voters = [v.copy() for v in elec['voters']]
         cands = elec['candidates']
         winners = elec['winners']
         cst_arr, winner_idxs = self.prepare_for_meas(elec,dist=dist)
-        distortion_val, worst_bloc_idxs = measurements.worst_random_group_inefficiency(n_samples, cst_arr,winner_idxs)
+        distortion_val, worst_bloc_idxs = measurements.worst_random_group_inefficiency(n_samples, cst_arr,winner_idxs,interpolate=interpolate)
         worst_bloc = [voters[int(i)] for i in worst_bloc_idxs]
         for v in voters:
             if v in worst_bloc:
@@ -286,22 +354,23 @@ class Simulation:
             'distortion': distortion_val
         }
 
-    def worst_heur(self, elec, dist=euclidean_dist):
+    def worst_heur(self, elec, dist=euclidean_dist,interpolate=False):
         voters = [v.copy() for v in elec['voters']]
         cands = elec['candidates']
         winners = elec['winners']
         cost_array, winner_idxs = self.prepare_for_meas(elec,dist=dist)
-        worst_bloc_idxs = measurements.heuristic_worst_bloc(cost_array,winner_idxs)
+        worst_bloc_idxs = measurements.heuristic_worst_bloc(cost_array,winner_idxs,interpolate=interpolate)
         worst_bloc = [voters[int(i)] for i in worst_bloc_idxs]
+        distortion_val = self.idx_distortion(elec, idxs=worst_bloc_idxs,interpolate=interpolate,dist=dist)
+
         for v in worst_bloc:
             v.change_name("WORST")
-
-        distortion_val,_ = distortion(voters, cands, winners, voter_subset=worst_bloc)
         return {
             'voters': voters,
             'candidates': cands,
             'winners': winners,
-            'distortion': distortion_val
+            'distortion': distortion_val,
+            'group_dists': {}
         }
 
 

@@ -249,7 +249,7 @@ def proportional_assignment_cost(
     size_ceil = int(np.ceil(bloc_size / n * k))
     interp = (bloc_size / n * k)-int(np.floor(bloc_size / n * k))
     if interpolate == False:
-        return min_assignment_cost(bloc_array, size_floor)
+        return min_assignment_cost(bloc_array, size_floor), None
     else:
         return np.array([min_assignment_cost(bloc_array, size_floor), min_assignment_cost(bloc_array, size_ceil)]), interp
 
@@ -260,7 +260,7 @@ def group_inefficiency(
     winner_indices: NDArray, 
     voter_labels: NDArray, 
     bloc_label: int,
-    interpolate = True
+    interpolate = False
 ) -> float:
     """
     Computes the group inefficiency score as the cost ratio between
@@ -403,7 +403,8 @@ def worst_random_group_inefficiency(
 def heuristic_worst_bloc(
     cst_array: NDArray,
     winner_indices: NDArray,
-    max_size : int = None
+    max_size : int = None,
+    interpolate=False
 ) -> NDArray:
     """
     Given a cost array and a set of winning candidates, finds a cohesive 
@@ -441,7 +442,7 @@ def heuristic_worst_bloc(
             closest = tiebreak(sum_of_distances)[:size]
             closest_mask = np.zeros(n, dtype = int)
             closest_mask[closest] = 1
-            score = group_inefficiency(cst_array, winner_indices, closest_mask, bloc_label=1)
+            score = group_inefficiency(cst_array, winner_indices, closest_mask, bloc_label=1,interpolate=interpolate)
             
             if np.isclose(score,heuristic_score, atol = 1e-8):
                 # If scores are close enough that differences can be chalked up to numerical error,

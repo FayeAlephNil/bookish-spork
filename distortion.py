@@ -48,7 +48,7 @@ def distortion(voting_data, cands, winner_set, group_name='',voter_subset=None, 
 
         optimal_distance = sum(L1_distances[k] for k in list(optimal_cands.keys()))
         winner_distance = sum(L1_distances[k] for k  in list(optimal_winners.keys()))
-
+        distortion = winner_distance/optimal_distance
         return distortion, optimal_cands
 
 

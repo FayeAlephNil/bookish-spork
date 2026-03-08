@@ -34,7 +34,7 @@ def gen_voter_display_type(voter_names, voter_regions):
         voter_name_ct += 1
     return shape_type, color_type
 
-def display_by_type(voter_data, cands, shape_type, color_type,ax=None):
+def display_by_type(voter_data, cands, shape_type, color_type,ax=None,opacity=0.5):
     if ax == None:
         fig,ax = plt.subplots()
     data_sorted = defaultdict(list)
@@ -44,7 +44,7 @@ def display_by_type(voter_data, cands, shape_type, color_type,ax=None):
         c = color_type[d.identifier]
         data_sorted[(s,c)].append(d.pos)
     for k,v in data_sorted.items():
-        ax.scatter([x[0] for x in v],[x[1] for x in v],marker=k[0],color=k[1],alpha=0.1)
+        ax.scatter([x[0] for x in v],[x[1] for x in v],marker=k[0],color=k[1],alpha=opacity)
     for name,pos,color,marker in cands:
         ax.scatter(pos[0],pos[1], marker=marker,color=color)
         ax.annotate(name,pos)
