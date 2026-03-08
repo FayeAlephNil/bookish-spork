@@ -55,7 +55,7 @@ def make_group_colors(group_dists,voters):
                 break
     return group_colors
 
-def build_ax(result, ax, display_cands=True, show_distortion=True, show_group_dist=True, opacity=0.1,x_dist=0.95,y_dist=0.95,winner_color='m',cand_color='g'):
+def build_ax(result, ax, display_cands=True, show_cand_names=True,show_distortion=True, show_group_dist=True, opacity=0.1,x_dist=0.95,y_dist=0.95,winner_color='m',cand_color='g'):
     cands_for_disp = []
     candidates = result.get('candidates',[])
     winners = result.get('winners',[])
@@ -69,7 +69,7 @@ def build_ax(result, ax, display_cands=True, show_distortion=True, show_group_di
         cands_for_disp.append(cand_disp)
     ax = place_voters_ax(voters,opacity=opacity,ax=ax,show_names=False)
     if display_cands:
-        ax = place_voters_ax(cands_for_disp,opacity=None,ax=ax,show_names=True)
+        ax = place_voters_ax(cands_for_disp,opacity=None,ax=ax,show_names=show_cand_names)
     if show_distortion:
         if show_group_dist:
             group_colors = make_group_colors(group_dists, voters)

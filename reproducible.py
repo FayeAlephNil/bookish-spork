@@ -133,3 +133,67 @@ def centrist_swing(show_it):
         display.display(worst_local_result,xlim=(-1,1),ylim=(-1,1),save_at=file_worst_local,show_it=show_it)
         display.display(local_results,xlim=(-1,1),ylim=(-1,1),save_at=file_local,show_it=show_it)
 
+
+def fringe_parties(show_it):
+    seed = 710024847
+    polarized_small = 0.05
+    polarized_large = 0.35
+    total = 1000
+    num_cands = 50
+    num_winners = 4#num_cands/5
+    interp = True
+    
+    parties = person.fringes(sigma=0.1,size=0.6)
+    region_small_polar = Region({
+        parties['ExtremeUp']: int(polarized_small * total),
+        parties['Up']: int(np.round((1-2*polarized_small)/2 * total)),
+        parties['Down']: int(np.round((1-2*polarized_small)/2 * total)),
+        parties['ExtremeDown']: int(polarized_small * total)
+    },deterministic=True,name='Center')
+    region_large_polar = Region({
+        parties['ExtremeUp']: int(polarized_large * total),
+        parties['Up']: int(np.round((1-2*polarized_large)/2 * total)),
+        parties['Down']: int(np.round((1-2*polarized_large)/2 * total)),
+        parties['ExtremeDown']: int(polarized_large * total)
+    },deterministic=True,marker='o',name='Polar')
+    nation = Region.combine([region_small_polar,region_large_polar],deterministic=True)
+    region_small_polar.color_dict = {
+        parties['Up']: (1,0,0),
+        parties['ExtremeUp']: (1,0.7,0),
+        parties['ExtremeDown']: (0,0.7,1),
+        parties['Down']: (0,0,1)
+    }
+    
+    assert region_large_polar.population == region_small_polar.population
+    region_large_polar.color_dict = region_small_polar.color_dict
+    
+    
+    
+    cand_dist = lambda: nation.gen_one_random().pos
+    cand_kwargs = {}
+    #cand_dist=np.random.uniform
+    #cand_kwargs = {'low': (-0.4,-1.5), 'high': (0.4,1.5), 'size': 2}
+    sim = Simulation(nation,cand_dist=cand_dist,cand_kwargs=cand_kwargs)
+    #sim = Simulation(nation,cand_dist=cand_dist,cand_kwargs=cand_kwargs,seed=710024847)
+    
+    for v,amt in nation.voters.items():
+        print(f"{v.name} Population: {amt}")
+    
+    national_vote,local_votes = sim.run_local_votes(num_cands,total)
+    for elec_type,name in [(Plurality,'plurality'), (STV,'stv'), (Borda,'borda')]:
+        national_result = sim.run_national_election(national_vote,num_winners=num_winners,election_type=elec_type,interpolate=interp) 
+        loc_result = sim.run_local_elections(local_votes,num_winners=num_winners,election_type=elec_type,interpolate=interp) 
+        display.display(national_result,xlim=(-1,1),ylim=(-1.6,1.6),ax_kwargs={
+            'show_cand_names': False
+        }, save_at='images/fringes/fringe_national_' + name + '.png',show_it=show_it)
+        display.display(loc_result,xlim=(-1,1),ylim=(-1.6,1.6),ax_kwargs={
+            'show_cand_names': False
+        },save_at='images/fringes/fringe_local_' + name + '.png',show_it=show_it)
+        display.display(loc_result['locals'][0][1],xlim=(-1,1),ylim=(-1.6,1.6),ax_kwargs={
+            'show_cand_names': False
+        },save_at='images/fringes/fringe_center_region_' + name + '.png', show_it=show_it)
+        display.display(loc_result['locals'][1][1],xlim=(-1,1),ylim=(-1.6,1.6),ax_kwargs={
+            'show_cand_names': False
+        },save_at='images/fringes/fringe_polarized_region_' + name + '.png', show_it=show_it)
+        
+        
