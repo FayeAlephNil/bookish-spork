@@ -173,7 +173,7 @@ class Simulation:
         idx = 0
 
         for prop,sim in simulations:
-            local_num_ballots = int(np.floor(num_ballots*prop))
+            local_num_ballots = int(np.floor(num_ballots*prop)) 
             local_num_cands = int(np.floor(num_cands*prop))
             local_cand_names = cand_names[idx:idx+local_num_cands+1]
             idx += local_num_cands+1
@@ -186,21 +186,35 @@ class Simulation:
         cost_array = None
 
         for _,_,vote in locals:
-            if prof == None:
-                prof = vote['profile']
-            else:
-                prof = prof + vote['profile']
             cands = cands | vote['candidates']
             voters = np.concatenate((voters, vote['voters']))
 
+        true_num_cands = len(cands.keys())
+        true_num_ballots = len(voters)
+
         if len(self.region.subregions) == 1:
             cost_array = locals[0][2]['cost_array']
+            prof = locals[0][2]['profile']
         else:
             cost_array = np.zeros((len(cands.keys()), len(voters)))
             cand_names = cands.keys()
+            ballot_pool = np.full((true_num_ballots, true_num_cands), frozenset("~"))
             for j, v in enumerate(voters):
-                for i, c_name in enumerate(cands.keys()):
+                with_names = []
+                for i, c_name in enumerate(cand_names):
                     cost_array[i,j] = dist(v.pos, cands[c_name])
+                    with_names.append((c_name,cost_array[i,j]))
+
+                candidate_ranking = np.array(
+                    [frozenset({t[0]}) for t in sorted(with_names, key=lambda x: x[1])]
+                )
+                ballot_pool[j] = candidate_ranking
+            df = pd.DataFrame(ballot_pool)
+            df.index.name = "Ballot Index"
+            df.columns = [f"Ranking_{i + 1}" for i in range(true_num_cands)]
+            df["Weight"] = 1
+            df["Voter Set"] = [frozenset()] * len(df)
+            prof = RankProfile(candidates=cand_names, df=df, max_ranking_length=true_num_cands)
 
         national = {
             'profile': prof,
