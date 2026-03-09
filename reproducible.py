@@ -6,11 +6,14 @@ import person
 import full_kit
 import numpy as np
 import display
+import matplotlib.pyplot as plt
 
 from votekit.elections import STV,Borda,Plurality,BlocPlurality
 
-def anomaly_add_one_person(show_it):
-    seed = 857473969
+def anomaly_add_one_person(show_it,seeded):
+    seed = None
+    if seeded:
+        seed = 857473969
     num_winners = 4
     num_cands = 20
     num_ballots = 1000
@@ -37,8 +40,10 @@ def anomaly_add_one_person(show_it):
     worst_result = sim.worst_heur(national_result,interpolate=False)
     display.display(worst_result,opacity=0.1,xlim=(-1,1),ylim=(-1,1),save_at='images/add_one_person_after.png',show_it=show_it)
 
-def anomaly_add_one_person_interp(show_it):
-    seed = 857473969
+def anomaly_add_one_person_interp(show_it,seeded):
+    seed = None
+    if seeded:
+        seed = 857473969
     num_winners = 4
     num_cands = 20
     num_ballots = 1000
@@ -63,17 +68,26 @@ def anomaly_add_one_person_interp(show_it):
     worst_result = sim.worst_heur(national_result,interpolate=True)
     display.display(worst_result,opacity=0.1,xlim=(-1,1),ylim=(-1,1), save_at='images/add_one_person_interp_after.png',show_it=show_it)
 
-def centrist_swing(show_it):
-    to_run = [
-        (4004134264, Borda,True, 'interp--center_swing_borda',False),
-       (4004134264, STV,True, 'interp--center_swing_stv',False),
-       (4004134264, Borda,False, 'nointerp--center_swing_borda',False),
-       (4004134264, STV,False, 'nointerp--center_swing_stv',False),
-       (3597092709, Borda, True, 'interp--center_split_borda',False),
-       (3597092709, Borda, False, 'nointerp--center_split_borda',False),
-       (3597092709, STV, False, 'nointerp--center_split_stv',False),
-       (3597092709, STV, True, 'interp--center_split_stv',False)
-    ]
+def centrist_swing(show_it,seeded):
+    to_run = []
+    if seeded:
+        to_run = [
+            (4004134264, Borda,True, 'interp--center_swing_borda',False),
+           (4004134264, STV,True, 'interp--center_swing_stv',False),
+           (4004134264, Borda,False, 'nointerp--center_swing_borda',False),
+           (4004134264, STV,False, 'nointerp--center_swing_stv',False),
+           (3597092709, Borda, True, 'interp--center_split_borda',False),
+           (3597092709, Borda, False, 'nointerp--center_split_borda',False),
+           (3597092709, STV, False, 'nointerp--center_split_stv',False),
+           (3597092709, STV, True, 'interp--center_split_stv',False)
+        ]
+    else:
+        to_run = [
+           (None, Borda,True, 'interp--center_swing_borda',False),
+           (None, STV,True, 'interp--center_swing_stv',False),
+           (None, Borda,False, 'nointerp--center_swing_borda',False),
+           (None, STV,False, 'nointerp--center_swing_stv',False),
+        ]
     percent_center = 0.10
     total = 1000
     num_cands = 20
@@ -134,8 +148,10 @@ def centrist_swing(show_it):
         display.display(local_results,xlim=(-1,1),ylim=(-1,1),save_at=file_local,show_it=show_it)
 
 
-def fringe_parties(show_it):
-    seed = 710024847
+def fringe_parties(show_it, seeded):
+    seed = None
+    if seeded:
+        seed = 710024847
     polarized_small = 0.05
     polarized_large = 0.35
     total = 1000

@@ -12,15 +12,23 @@ print('- all')
 
 choice = input("Enter the name of the function to run: ")
 show = input("Show data in viewer y/N? ")
-if show == 'y':
+seeded = input("Use pregenerated seeds Y/n? ")
+print("\n")
+if show == 'y' or show == 'Y':
     show_it = True
 else:
     show_it = False
 
+if seeded == 'n' or seeded == 'N':
+    seeded = False
+else:
+    seeded = True
+
+
 if choice in available_functions:
-    available_functions[choice](show_it)
+    available_functions[choice](show_it,seeded)
 elif choice == 'all':
     for x in available_functions.values():
-        x(show_it)
+        x(show_it,seeded)
 else:
     print(f"Function {choice} not found.")
